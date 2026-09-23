@@ -95,6 +95,7 @@ def member1(test_tenant):
     """Creates the first Member instance within the test tenant's schema."""
     connection.set_tenant(test_tenant)
     member = Member.objects.create(
+        region="washington",
         name="Test User 1",
         email="test1@example.com",
         phone="123-456-7890"
@@ -107,6 +108,7 @@ def member2(test_tenant):
     """Creates the second Member instance within the test tenant's schema."""
     connection.set_tenant(test_tenant)
     member = Member.objects.create(
+        region="washington",
         name="Test User 2",
         email="test2@example.com",
         phone="098-765-4321"

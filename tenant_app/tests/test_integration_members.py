@@ -11,12 +11,12 @@ NONEXISTENT_ID = 9999
 
 def detail_url(tenant_domain, member):
     """Helper to get detail URL for a member, including tenant domain prefix"""
-    return f'/client/{tenant_domain}/api/members/{member.id}'
+    return f'/client/{tenant_domain}/washington/api/members/{member.id}'
 
 def test_list_members(tenant_client, test_tenant, member1, member2):
     """Test listing all members"""
     domain = test_tenant.test_domain # Get domain from the tenant fixture
-    list_url = f'/client/{domain}/api/members' # Construct URL dynamically
+    list_url = f'/client/{domain}/washington/api/members' # Construct URL dynamically
 
     response = tenant_client.get(list_url)
     data = response.json()
@@ -36,7 +36,7 @@ def test_list_members(tenant_client, test_tenant, member1, member2):
 def test_create_member(tenant_client, test_tenant):
     """Test creating a new member"""
     domain = test_tenant.test_domain
-    list_url = f'/client/{domain}/api/members'
+    list_url = f'/client/{domain}/washington/api/members'
 
     new_member_data = {
         "name": "New Test User",
@@ -66,7 +66,7 @@ def test_create_member(tenant_client, test_tenant):
 def test_create_member_invalid_data(tenant_client, test_tenant):
     """Test creating a member with invalid data (missing required fields)"""
     domain = test_tenant.test_domain
-    list_url = f'/client/{domain}/api/members'
+    list_url = f'/client/{domain}/washington/api/members'
 
     invalid_data = {
         # Missing required 'name' field
@@ -100,7 +100,7 @@ def test_get_member(tenant_client, test_tenant, member1):
 def test_get_nonexistent_member(tenant_client, test_tenant):
     """Test retrieving a member that doesn't exist"""
     domain = test_tenant.test_domain
-    nonexistent_url = f'/client/{domain}/api/members/{NONEXISTENT_ID}' # Construct URL dynamically
+    nonexistent_url = f'/client/{domain}/washington/api/members/{NONEXISTENT_ID}' # Construct URL dynamically
 
     response = tenant_client.get(nonexistent_url)
     # Assuming Ninja returns 404 when Member.DoesNotExist is caught by its handler
@@ -140,7 +140,7 @@ def test_update_member(tenant_client, test_tenant, member1):
 def test_update_nonexistent_member(tenant_client, test_tenant):
     """Test updating a member that doesn't exist"""
     domain = test_tenant.test_domain
-    nonexistent_url = f'/client/{domain}/api/members/{NONEXISTENT_ID}' # Construct URL dynamically
+    nonexistent_url = f'/client/{domain}/washington/api/members/{NONEXISTENT_ID}' # Construct URL dynamically
 
     update_data = {
         "name": "This Won't Work",
@@ -230,7 +230,7 @@ def test_delete_member(tenant_client, test_tenant, member1):
 def test_delete_nonexistent_member(tenant_client, test_tenant):
     """Test deleting a member that doesn't exist"""
     domain = test_tenant.test_domain
-    nonexistent_url = f'/client/{domain}/api/members/{NONEXISTENT_ID}' # Construct URL dynamically
+    nonexistent_url = f'/client/{domain}/washington/api/members/{NONEXISTENT_ID}' # Construct URL dynamically
 
     response = tenant_client.delete(nonexistent_url)
     assert response.status_code == 404 

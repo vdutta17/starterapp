@@ -1,69 +1,80 @@
-from ninja import NinjaAPI, Schema
-from typing import List, Optional
-from .models import Member
 from datetime import datetime
-from django.shortcuts import get_object_or_404
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import connection
+from typing import Annotated, List, Optional
 
-api = NinjaAPI(title="Tenant API", urls_namespace="tenant_api")
-    
+from django.core.exceptions import ObjectDoesNotExist
+from ninja import NinjaAPI, Path, Schema
+from pydantic import ConfigDict
+
+from .models import Member
+from .regions import region_context
+
+api = NinjaAPI(title="Tenant API", urls_namespace="tenant_api", docs_url="/api/docs", openapi_url="/api/openapi.json")
+RegionPath = Annotated[str, Path(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=63)]
+
+
 class MemberUpdateSchema(Schema):
     name: str
     phone: Optional[str] = None
     email: Optional[str] = None
 
+    model_config = ConfigDict(extra="forbid")
+
+
 class MemberResponseSchema(Schema):
     id: int
+    region: str
     name: str
     phone: Optional[str] = None
     email: Optional[str] = None
     created_at: datetime
 
-class ErrorSchema(Schema):
-    detail: str
 
 @api.exception_handler(ObjectDoesNotExist)
 def object_does_not_exist_handler(request, exc):
-    return api.create_response(
-        request,
-        {"detail": "Object not found."},
-        status=404
-    )
+    return api.create_response(request, {"detail": "Object not found."}, status=404)
 
-@api.get("/members", response=List[MemberResponseSchema])
-def list_members(request):
-    # The current tenant schema is already set by django-tenants middleware
-    return Member.objects.all()
 
-@api.post("/members", response=MemberResponseSchema)
-def create_member(request, payload: MemberUpdateSchema):
-    # The current tenant schema is already set by django-tenants middleware
-    member = Member.objects.create(
-        name=payload.name,
-        phone=payload.phone,
-        email=payload.email
-    )
-    return member
+@api.get("/{region}/api/members", response=List[MemberResponseSchema])
+def list_members(request, region: RegionPath):
+    with region_context(region):
+        # Evaluate before the transaction-local database scope is cleared.
+        return list(Member.objects.filter(region=region))
 
-@api.get("/members/{member_id}", response=MemberResponseSchema)
-def get_member(request, member_id: int):
-    member = Member.objects.get(id=member_id)
-    return member
 
-@api.put("/members/{member_id}", response=MemberResponseSchema)
-def update_member(request, member_id: int, payload: MemberUpdateSchema):
-    member = Member.objects.get(id=member_id)
-    member.name = payload.name
-    if payload.phone is not None:
-        member.phone = payload.phone
-    if payload.email is not None:
-        member.email = payload.email
-    member.save()
-    return member
+@api.post("/{region}/api/members", response=MemberResponseSchema)
+def create_member(request, region: RegionPath, payload: MemberUpdateSchema):
+    with region_context(region):
+        return Member.objects.create(
+            region=region, name=payload.name,
+            phone=payload.phone or "", email=payload.email or "",
+        )
 
-@api.delete("/members/{member_id}", response={200: None})
-def delete_member(request, member_id: int):
-    member = Member.objects.get(id=member_id)
-    member.delete()
-    return 200
+
+@api.get("/{region}/api/members/{member_id}", response=MemberResponseSchema)
+def get_member(request, region: RegionPath, member_id: int):
+    with region_context(region):
+        return Member.objects.get(region=region, id=member_id)
+
+
+@api.put("/{region}/api/members/{member_id}", response=MemberResponseSchema)
+def update_member(request, region: RegionPath, member_id: int, payload: MemberUpdateSchema):
+    with region_context(region):
+        member = Member.objects.get(region=region, id=member_id)
+        member.name = payload.name
+        if payload.phone is not None:
+            member.phone = payload.phone
+        if payload.email is not None:
+            member.email = payload.email
+        # Keep the application-level region predicate on the write as well.
+        Member.objects.filter(region=region, id=member_id).update(
+            name=member.name, phone=member.phone, email=member.email,
+        )
+        return member
+
+
+@api.delete("/{region}/api/members/{member_id}", response=None)
+def delete_member(request, region: RegionPath, member_id: int):
+    with region_context(region):
+        member = Member.objects.get(region=region, id=member_id)
+        Member.objects.filter(region=region, id=member.id).delete()
+        return None

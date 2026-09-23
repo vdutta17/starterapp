@@ -5,7 +5,7 @@ from django.views import defaults as default_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', tenant_api.urls),
+    path('', tenant_api.urls),
 ] 
 
 # Define error handlers

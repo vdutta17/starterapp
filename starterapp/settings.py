@@ -89,11 +89,11 @@ WSGI_APPLICATION = 'starterapp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django_tenants.postgresql_backend',
-        'NAME': 'starterapp',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'localhost',  # This connects to the Docker container via port mapping
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'starterapp'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),  # This connects to the Docker container via port mapping
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 

@@ -1,6 +1,7 @@
 from django.db import models
 
 class Member(models.Model):
+    region = models.SlugField(max_length=63, db_index=True)
     name = models.CharField(max_length=100)
     email = models.TextField(blank=True)
     phone = models.TextField(blank=True)
